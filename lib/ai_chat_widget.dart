@@ -193,7 +193,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
         model: widget.config.modelName,
         maxTokens: widget.config.maxTokens,
         messages: _aiMessages,
-        tools: widget.config.tools,
+        tools: widget.tools,
         temperature: widget.config.temperature
       );
 

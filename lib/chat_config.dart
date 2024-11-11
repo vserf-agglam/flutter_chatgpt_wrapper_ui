@@ -15,7 +15,6 @@ class ChatConfig {
   final int maxTokens;
   final double temperature;
   final bool automaticallyReplyLastMessageFromHistory;
-  final List<OpenAIToolModel> tools;
   const ChatConfig({
     required this.initialAiMessage,
     required this.systemPrompt,
@@ -24,7 +23,6 @@ class ChatConfig {
     this.maxTokens = 4096,
     this.temperature = 0.2,
     this.automaticallyReplyLastMessageFromHistory = false,
-    this.tools = const [],
     this.chatTheme = const DefaultChatTheme(
       backgroundColor: Colors.white,
       primaryColor: Colors.blue,

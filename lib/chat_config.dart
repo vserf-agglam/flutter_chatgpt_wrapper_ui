@@ -13,6 +13,7 @@ class ChatConfig {
   final DefaultChatTheme chatTheme;
   final int maxTokens;
   final double temperature;
+  final bool automaticallyReplyLastMessageFromHistory;
 
   const ChatConfig({
     required this.initialAiMessage,
@@ -21,6 +22,7 @@ class ChatConfig {
     this.modelName = "gpt-4o-mini",
     this.maxTokens = 4096,
     this.temperature = 0.2,
+    this.automaticallyReplyLastMessageFromHistory = false,
     this.chatTheme = const DefaultChatTheme(
       backgroundColor: Colors.white,
       primaryColor: Colors.blue,

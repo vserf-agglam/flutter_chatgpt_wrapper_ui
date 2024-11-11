@@ -14,7 +14,7 @@ class AIChatWidget extends StatefulWidget {
   final ChatConfig config;
   final List<ChatMessage> messageHistory;
   final Widget Function(types.CustomMessage, {required int messageWidth})?
-  customMessageBuilder;
+      customMessageBuilder;
   final List<OpenAIToolModel>? tools;
   final Function(String)? onToolCall;
   final Function(ChatMessage)? onNewMessage;
@@ -39,11 +39,10 @@ class _AIChatWidgetState extends State<AIChatWidget> {
 
   late types.User _ai;
   late types.User _user;
-
+  File? _pendingImage;
   String _streamText = '';
   String _chatResponseId = '';
   bool _isAiTyping = false;
-  File? _pendingImage;
 
   @override
   void initState() {
@@ -51,6 +50,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
     _initializeChat();
     _setupUsers();
     _loadMessageHistory();
+    _automaticallyReplyIfNeeded();
   }
 
   void _initializeChat() {
@@ -180,7 +180,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
       final base64Url = "data:image/jpeg;base64,$base64Image";
 
       final imageContent =
-      OpenAIChatCompletionChoiceMessageContentItemModel.imageUrl(base64Url);
+          OpenAIChatCompletionChoiceMessageContentItemModel.imageUrl(base64Url);
 
       _aiMessages.add(
         OpenAIChatCompletionChoiceMessageModel(
@@ -196,7 +196,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
       );
 
       chatStream.listen(
-            (event) {
+        (event) {
           _handleStreamResponse(event);
         },
         onError: (error) {
@@ -225,6 +225,19 @@ class _AIChatWidgetState extends State<AIChatWidget> {
           );
         }
       });
+    }
+  }
+
+  void _automaticallyReplyIfNeeded() {
+    if (widget.config.automaticallyReplyLastMessageFromHistory &&
+        widget.messageHistory.isNotEmpty) {
+      final lastMessage = widget.messageHistory.last;
+      if (lastMessage.isUserMessage) {
+        // Delay the automatic reply slightly to allow the UI to update
+        Future.delayed(Duration(milliseconds: 100), () {
+          _completeChatStream(lastMessage.content);
+        });
+      }
     }
   }
 
@@ -275,7 +288,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
     });
 
     chatStream.listen(
-          (event) {
+      (event) {
         _handleStreamResponse(event);
       },
       onError: (error) {
@@ -386,7 +399,6 @@ class _AIChatWidgetState extends State<AIChatWidget> {
 
   @override
   Widget build(BuildContext context) {
-
     return Chat(
       theme: widget.config.chatTheme,
       messages: _messages,

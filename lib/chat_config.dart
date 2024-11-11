@@ -1,5 +1,6 @@
 // lib/chat/chat_config.dart
 
+import 'package:dart_openai/dart_openai.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 
@@ -14,7 +15,7 @@ class ChatConfig {
   final int maxTokens;
   final double temperature;
   final bool automaticallyReplyLastMessageFromHistory;
-
+  final List<OpenAIToolModel> tools;
   const ChatConfig({
     required this.initialAiMessage,
     required this.systemPrompt,
@@ -23,6 +24,7 @@ class ChatConfig {
     this.maxTokens = 4096,
     this.temperature = 0.2,
     this.automaticallyReplyLastMessageFromHistory = false,
+    this.tools = const [],
     this.chatTheme = const DefaultChatTheme(
       backgroundColor: Colors.white,
       primaryColor: Colors.blue,

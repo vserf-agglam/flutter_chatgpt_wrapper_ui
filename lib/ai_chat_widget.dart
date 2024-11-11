@@ -39,7 +39,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
 
   late types.User _ai;
   late types.User _user;
-  File? _pendingImage;
+    File? _pendingImage;
   String _streamText = '';
   String _chatResponseId = '';
   bool _isAiTyping = false;
@@ -191,8 +191,10 @@ class _AIChatWidgetState extends State<AIChatWidget> {
 
       final chatStream = OpenAI.instance.chat.createStream(
         model: widget.config.modelName,
-        maxTokens: 4096,
+        maxTokens: widget.config.maxTokens,
         messages: _aiMessages,
+        tools: widget.config.tools,
+        temperature: widget.config.temperature
       );
 
       chatStream.listen(
@@ -278,7 +280,8 @@ class _AIChatWidgetState extends State<AIChatWidget> {
 
     final chatStream = OpenAI.instance.chat.createStream(
       model: widget.config.modelName,
-      temperature: 0.1,
+      temperature: widget.config.temperature,
+      maxTokens: widget.config.maxTokens,
       messages: _aiMessages,
       tools: widget.tools,
     );

@@ -16,14 +16,14 @@ class AIChatWidget extends StatefulWidget {
   final ChatConfig config;
   final List<ChatMessage> messageHistory;
   final Widget Function(types.CustomMessage, {required int messageWidth})?
-      customMessageBuilder;
+  customMessageBuilder;
   final List<OpenAIToolModel>? tools;
   final Future<ToolHandlerResponse> Function(String, String)? onToolCall;
   final Function(ChatMessage)? onNewMessage;
   Map<String, Map<String, String>> _toolCallCollector = {};
   String _currentToolCallId = '';
 
-   AIChatWidget({
+  AIChatWidget({
     super.key,
     required this.config,
     required this.messageHistory,
@@ -43,7 +43,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
 
   late types.User _ai;
   late types.User _user;
-    File? _pendingImage;
+  File? _pendingImage;
   String _streamText = '';
   String _chatResponseId = '';
   bool _isAiTyping = false;
@@ -128,8 +128,13 @@ class _AIChatWidgetState extends State<AIChatWidget> {
     if (_messages.isEmpty) {
       final initialMessage = types.TextMessage(
         author: _ai,
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        createdAt: DateTime
+            .now()
+            .millisecondsSinceEpoch,
+        id: DateTime
+            .now()
+            .millisecondsSinceEpoch
+            .toString(),
         text: widget.config.initialAiMessage,
       );
       _messages.insert(0, initialMessage);
@@ -159,8 +164,13 @@ class _AIChatWidgetState extends State<AIChatWidget> {
 
       final imageMessage = types.ImageMessage(
         author: _user,
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        createdAt: DateTime
+            .now()
+            .millisecondsSinceEpoch,
+        id: DateTime
+            .now()
+            .millisecondsSinceEpoch
+            .toString(),
         name: imageData.name,
         size: imageData.bytes.length,
         uri: imageData.path,
@@ -185,7 +195,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
       final base64Url = "data:image/jpeg;base64,$base64Image";
 
       final imageContent =
-          OpenAIChatCompletionChoiceMessageContentItemModel.imageUrl(base64Url);
+      OpenAIChatCompletionChoiceMessageContentItemModel.imageUrl(base64Url);
 
       _aiMessages.add(
         OpenAIChatCompletionChoiceMessageModel(
@@ -195,15 +205,15 @@ class _AIChatWidgetState extends State<AIChatWidget> {
       );
 
       final chatStream = OpenAI.instance.chat.createStream(
-        model: widget.config.modelName,
-        maxTokens: widget.config.maxTokens,
-        messages: _aiMessages,
-        tools: widget.tools,
-        temperature: widget.config.temperature
+          model: widget.config.modelName,
+          maxTokens: widget.config.maxTokens,
+          messages: _aiMessages,
+          tools: widget.tools,
+          temperature: widget.config.temperature
       );
 
       chatStream.listen(
-        (event) {
+            (event) {
           _handleStreamResponse(event);
         },
         onError: (error) {
@@ -251,8 +261,13 @@ class _AIChatWidgetState extends State<AIChatWidget> {
   void _handleSendPressed(types.PartialText message) async {
     final textMessage = types.TextMessage(
       author: _user,
-      createdAt: DateTime.now().millisecondsSinceEpoch,
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      createdAt: DateTime
+          .now()
+          .millisecondsSinceEpoch,
+      id: DateTime
+          .now()
+          .millisecondsSinceEpoch
+          .toString(),
       text: message.text,
       status: types.Status.sent,
     );
@@ -296,7 +311,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
     });
 
     chatStream.listen(
-      (event) {
+          (event) {
         _handleStreamResponse(event);
       },
       onError: (error) {
@@ -330,7 +345,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
 
     if (event.choices.first.delta.toolCalls?.isNotEmpty ?? false) {
       final toolCall = event.choices.first.delta.toolCalls!.first;
-      if ( widget.onToolCall != null) {
+      if (widget.onToolCall != null) {
         _handleToolCall(toolCall);
       }
     }
@@ -349,32 +364,36 @@ class _AIChatWidgetState extends State<AIChatWidget> {
   }
 
   void _mergeToolResponse(ToolHandlerResponse toolResponse) {
-    if (toolResponse.messages.isNotEmpty) {
-      _messages.removeAt(0); // Remove the first message before merging
-      _messages.insertAll(0, toolResponse.messages);
-    }
+    setState(() {
+      if (toolResponse.messages.isNotEmpty) {
+        if(_messages.length > 0){
+          _messages.removeAt(0);
+        }
 
-    _aiMessages.addAll(toolResponse.choices);
+        _messages.insertAll(0, toolResponse.messages);
+      }
+
+      _aiMessages.addAll(toolResponse.choices);
+    });
   }
 
   void _handleToolCallComplete() {
     if (_toolCallCollector.hasData) {
       if (widget.onToolCall != null) {
-        var arguments =_toolCallCollector.arguments.toString();
-        widget.onToolCall!(_toolCallCollector.functionName,  arguments)
-        .then((toolResponse) {
+        var arguments = _toolCallCollector.arguments.toString();
+        widget.onToolCall!(_toolCallCollector.functionName, arguments)
+            .then((toolResponse) {
           // Merge the tool response
           _mergeToolResponse(toolResponse);
         })
-        .catchError((error) {
-           print('Error handling tool call: $error');
-         });
+            .catchError((error) {
+          print('Error handling tool call: $error');
+        });
 
 
         // Reset the tool call collector for the next round
         _toolCallCollector.reset();
       }
-
     }
   }
 
@@ -414,7 +433,9 @@ class _AIChatWidgetState extends State<AIChatWidget> {
         author: _ai,
         id: id,
         text: content,
-        createdAt: DateTime.now().millisecondsSinceEpoch,
+        createdAt: DateTime
+            .now()
+            .millisecondsSinceEpoch,
       );
       _messages.insert(0, newMessage);
     });

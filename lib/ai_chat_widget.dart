@@ -330,7 +330,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
 
     if (event.choices.first.delta.toolCalls?.isNotEmpty ?? false) {
       final toolCall = event.choices.first.delta.toolCalls!.first;
-      if (toolCall.function.name != null && widget.onToolCall != null) {
+      if ( widget.onToolCall != null) {
         _handleToolCall(toolCall);
       }
     }

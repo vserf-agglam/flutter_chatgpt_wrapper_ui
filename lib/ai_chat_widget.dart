@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:flutter_chatgpt_wrapper_ui/tool_call_collector.dart';
+import 'package:flutter_chatgpt_wrapper_ui/tool_handler_response.dart';
 
 import 'chat_config.dart';
 import 'chat_message.dart';
@@ -16,10 +18,12 @@ class AIChatWidget extends StatefulWidget {
   final Widget Function(types.CustomMessage, {required int messageWidth})?
       customMessageBuilder;
   final List<OpenAIToolModel>? tools;
-  final Function(String)? onToolCall;
+  final ToolHandlerResponse Function(String, String)? onToolCall;
   final Function(ChatMessage)? onNewMessage;
+  Map<String, Map<String, String>> _toolCallCollector = {};
+  String _currentToolCallId = '';
 
-  const AIChatWidget({
+   AIChatWidget({
     super.key,
     required this.config,
     required this.messageHistory,
@@ -43,6 +47,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
   String _streamText = '';
   String _chatResponseId = '';
   bool _isAiTyping = false;
+  final ToolCallCollector _toolCallCollector = ToolCallCollector();
 
   @override
   void initState() {
@@ -326,7 +331,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
     if (event.choices.first.delta.toolCalls?.isNotEmpty ?? false) {
       final toolCall = event.choices.first.delta.toolCalls!.first;
       if (toolCall.function.name != null && widget.onToolCall != null) {
-        widget.onToolCall!(toolCall.function.name!);
+        _handleToolCall(toolCall);
       }
     }
 
@@ -335,9 +340,49 @@ class _AIChatWidgetState extends State<AIChatWidget> {
 
       if (event.choices.first.finishReason == "stop") {
         _handleStreamComplete(_streamText);
+      } else if (event.choices.first.finishReason == "tool_calls") {
+        _handleToolCallComplete();
       }
     } else {
       _startNewStreamMessage(event.id, chatResponseContent);
+    }
+  }
+
+  void _mergeToolResponse(ToolHandlerResponse toolResponse) {
+    if (toolResponse.messages.isNotEmpty) {
+      _messages.removeAt(0); // Remove the first message before merging
+      _messages.insertAll(0, toolResponse.messages);
+    }
+
+    _aiMessages.addAll(toolResponse.choices);
+  }
+
+  void _handleToolCallComplete() {
+    if (_toolCallCollector.hasData) {
+      if (widget.onToolCall != null) {
+        var toolResponse = widget.onToolCall!(_toolCallCollector.functionName, _toolCallCollector.arguments);
+        // Merge the tool response
+        _mergeToolResponse(toolResponse);
+
+        // Reset the tool call collector for the next round
+        _toolCallCollector.reset();
+      }
+
+    }
+  }
+
+
+  void _handleToolCall(OpenAIResponseToolCall toolCall) {
+    if (toolCall.id != null) {
+      _toolCallCollector.toolCallId = toolCall.id!;
+    }
+
+    if (toolCall.function.name != null) {
+      _toolCallCollector.functionName += toolCall.function.name!;
+    }
+
+    if (toolCall.function.arguments != null) {
+      _toolCallCollector.argumentsBuffer.write(toolCall.function.arguments!);
     }
   }
 

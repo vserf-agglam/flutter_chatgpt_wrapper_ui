@@ -360,7 +360,8 @@ class _AIChatWidgetState extends State<AIChatWidget> {
   void _handleToolCallComplete() {
     if (_toolCallCollector.hasData) {
       if (widget.onToolCall != null) {
-        widget.onToolCall!(_toolCallCollector.functionName, _toolCallCollector.arguments)
+        var arguments =_toolCallCollector.arguments.toString();
+        widget.onToolCall!(_toolCallCollector.functionName,  arguments)
         .then((toolResponse) {
           // Merge the tool response
           _mergeToolResponse(toolResponse);

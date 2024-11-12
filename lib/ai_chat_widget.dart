@@ -18,7 +18,7 @@ class AIChatWidget extends StatefulWidget {
   final Widget Function(types.CustomMessage, {required int messageWidth})?
       customMessageBuilder;
   final List<OpenAIToolModel>? tools;
-  final ToolHandlerResponse Function(String, String)? onToolCall;
+  final Future<ToolHandlerResponse> Function(String, String)? onToolCall;
   final Function(ChatMessage)? onNewMessage;
   Map<String, Map<String, String>> _toolCallCollector = {};
   String _currentToolCallId = '';
@@ -360,9 +360,15 @@ class _AIChatWidgetState extends State<AIChatWidget> {
   void _handleToolCallComplete() {
     if (_toolCallCollector.hasData) {
       if (widget.onToolCall != null) {
-        var toolResponse = widget.onToolCall!(_toolCallCollector.functionName, _toolCallCollector.arguments);
-        // Merge the tool response
-        _mergeToolResponse(toolResponse);
+        widget.onToolCall!(_toolCallCollector.functionName, _toolCallCollector.arguments)
+        .then((toolResponse) {
+          // Merge the tool response
+          _mergeToolResponse(toolResponse);
+        })
+        .catchError((error) {
+           print('Error handling tool call: $error');
+         });
+
 
         // Reset the tool call collector for the next round
         _toolCallCollector.reset();

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:dart_openai/dart_openai.dart';
 import 'package:flutter/foundation.dart';
@@ -11,6 +12,7 @@ import 'chat_config.dart';
 import 'chat_message.dart';
 import 'image_handler.dart';
 import 'message_status.dart';
+import 'dart:html' as html; // For Blob
 
 class AIChatWidget extends StatefulWidget {
   final ChatConfig config;
@@ -48,6 +50,17 @@ class _AIChatWidgetState extends State<AIChatWidget> {
   String _chatResponseId = '';
   bool _isAiTyping = false;
   final ToolCallCollector _toolCallCollector = ToolCallCollector();
+
+  String base64ToBlob(String base64String, String mimeType) {
+    // Step 1: Decode the Base64 string
+    Uint8List decodedBytes = base64Decode(base64String);
+
+    // Step 2: Create a Blob from the decoded bytes
+    final blob = html.Blob([decodedBytes], mimeType);
+
+    // Step 3: Create an Object URL for the Blob (optional)
+    return html.Url.createObjectUrlFromBlob(blob);
+  }
 
   @override
   void initState() {
@@ -93,14 +106,18 @@ class _AIChatWidgetState extends State<AIChatWidget> {
       if (message.attachments != null && message.attachments!.isNotEmpty) {
         for (var attachment in message.attachments!) {
           if (attachment.type == AttachmentType.image) {
+            var url = kIsWeb
+                ? base64ToBlob(attachment.content, attachment.mimeType)
+                : attachment.url;
+
             final imageMessage = types.ImageMessage(
-              author: message.isUserMessage ? _user : _ai,
-              createdAt: message.timestamp.millisecondsSinceEpoch,
-              id: '${message.timestamp.millisecondsSinceEpoch}_${attachment.name}',
-              name: attachment.name ?? "name",
-              size: attachment.size,
-              uri: attachment.url,
-            );
+                author: message.isUserMessage ? _user : _ai,
+                createdAt: message.timestamp.millisecondsSinceEpoch,
+                id: '${message.timestamp.millisecondsSinceEpoch}_${attachment.name}',
+                name: attachment.name ?? "name",
+                size: attachment.size,
+                uri: url);
+
             _messages.insert(0, imageMessage);
           } else if (attachment.type == AttachmentType.file) {
             final fileMessage = types.FileMessage(

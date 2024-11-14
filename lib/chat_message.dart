@@ -71,12 +71,14 @@ class Attachment {
   final int? duration;
   final int size;
   final String content;
+  final String mimeType;
 
   const Attachment({
     required this.type,
     required this.url,
     required this.size,
     required this.content,
+    required this.mimeType,
     this.name,
     this.duration,
   });
@@ -98,6 +100,7 @@ class Attachment {
       duration: json['duration'] as int?,
       size: json['size'] as int,
       content: json['content'] as String,
+      mimeType: json['mimeType'] as String,
     );
   }
 }

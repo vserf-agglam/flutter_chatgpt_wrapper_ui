@@ -152,7 +152,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
             if (message.attachments != null)
               for (var attachment in message.attachments!)
                 OpenAIChatCompletionChoiceMessageContentItemModel.imageUrl(
-                    attachment.url),
+                    attachment.content),
           ],
           role: message.isUserMessage
               ? OpenAIChatMessageRole.user

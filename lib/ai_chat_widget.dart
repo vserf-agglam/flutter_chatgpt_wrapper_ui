@@ -322,7 +322,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
         setState(() {
           _isAiTyping = false;
           if (_messages.isNotEmpty) {
-            _messages[0] = (_messages[0] as types.TextMessage).copyWith(
+            _messages[0] = _messages[0].copyWith(
               status: types.Status.error,
             );
           }

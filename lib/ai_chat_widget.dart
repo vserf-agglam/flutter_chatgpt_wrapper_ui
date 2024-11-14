@@ -107,7 +107,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
         for (var attachment in message.attachments!) {
           if (attachment.type == AttachmentType.image) {
             var url = kIsWeb
-                ? base64ToBlob(attachment.content, attachment.mimeType)
+                ? base64ToBlob(attachment.content.replaceFirst('data:${attachment.mimeType};base64,', ''), attachment.mimeType)
                 : attachment.url;
 
             final imageMessage = types.ImageMessage(

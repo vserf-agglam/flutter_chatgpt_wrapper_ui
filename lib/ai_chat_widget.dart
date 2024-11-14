@@ -16,7 +16,7 @@ class AIChatWidget extends StatefulWidget {
   final ChatConfig config;
   final List<ChatMessage> messageHistory;
   final Widget Function(types.CustomMessage, {required int messageWidth})?
-  customMessageBuilder;
+      customMessageBuilder;
   final List<OpenAIToolModel>? tools;
   final Future<ToolHandlerResponse> Function(String, String)? onToolCall;
   final Function(ChatMessage)? onNewMessage;
@@ -90,33 +90,52 @@ class _AIChatWidgetState extends State<AIChatWidget> {
 
   void _loadMessageHistory() {
     for (var message in widget.messageHistory) {
-      if (message.imageUrl != null) {
-        final imageMessage = types.ImageMessage(
+      if (message.attachments != null && message.attachments!.isNotEmpty) {
+        for (var attachment in message.attachments!) {
+          if (attachment.type == AttachmentType.image) {
+            final imageMessage = types.ImageMessage(
+              author: message.isUserMessage ? _user : _ai,
+              createdAt: message.timestamp.millisecondsSinceEpoch,
+              id: '${message.timestamp.millisecondsSinceEpoch}_${attachment.name}',
+              name: attachment.name ?? "name",
+              size: attachment.size,
+              uri: attachment.url,
+            );
+            _messages.insert(0, imageMessage);
+          } else if (attachment.type == AttachmentType.file) {
+            final fileMessage = types.FileMessage(
+              author: message.isUserMessage ? _user : _ai,
+              createdAt: message.timestamp.millisecondsSinceEpoch,
+              id: '${message.timestamp.millisecondsSinceEpoch}_${attachment.name}',
+              name: attachment.name ?? "name",
+              size: attachment.size,
+              uri: attachment.url,
+            );
+            _messages.insert(0, fileMessage);
+          }
+        }
+      }
+
+      if (message.content.isNotEmpty) {
+        final textMessage = types.TextMessage(
           author: message.isUserMessage ? _user : _ai,
           createdAt: message.timestamp.millisecondsSinceEpoch,
           id: message.timestamp.millisecondsSinceEpoch.toString(),
-          name: 'Image',
-          size: 0,
-          uri: message.imageUrl!,
+          text: message.content,
+          status: _convertMessageStatus(message.status),
         );
-        _messages.insert(0, imageMessage);
+        _messages.insert(0, textMessage);
       }
-
-      final textMessage = types.TextMessage(
-        author: message.isUserMessage ? _user : _ai,
-        createdAt: message.timestamp.millisecondsSinceEpoch,
-        id: message.timestamp.millisecondsSinceEpoch.toString(),
-        text: message.content,
-        status: _convertMessageStatus(message.status),
-      );
-
-      _messages.insert(0, textMessage);
 
       _aiMessages.add(
         OpenAIChatCompletionChoiceMessageModel(
           content: [
             OpenAIChatCompletionChoiceMessageContentItemModel.text(
-                message.content)
+                message.content),
+            if (message.attachments != null)
+              for (var attachment in message.attachments!)
+                OpenAIChatCompletionChoiceMessageContentItemModel.imageUrl(
+                    attachment.url),
           ],
           role: message.isUserMessage
               ? OpenAIChatMessageRole.user
@@ -128,13 +147,8 @@ class _AIChatWidgetState extends State<AIChatWidget> {
     if (_messages.isEmpty) {
       final initialMessage = types.TextMessage(
         author: _ai,
-        createdAt: DateTime
-            .now()
-            .millisecondsSinceEpoch,
-        id: DateTime
-            .now()
-            .millisecondsSinceEpoch
-            .toString(),
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
         text: widget.config.initialAiMessage,
       );
       _messages.insert(0, initialMessage);
@@ -164,13 +178,8 @@ class _AIChatWidgetState extends State<AIChatWidget> {
 
       final imageMessage = types.ImageMessage(
         author: _user,
-        createdAt: DateTime
-            .now()
-            .millisecondsSinceEpoch,
-        id: DateTime
-            .now()
-            .millisecondsSinceEpoch
-            .toString(),
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: imageData.name,
         size: imageData.bytes.length,
         uri: imageData.path,
@@ -195,7 +204,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
       final base64Url = "data:image/jpeg;base64,$base64Image";
 
       final imageContent =
-      OpenAIChatCompletionChoiceMessageContentItemModel.imageUrl(base64Url);
+          OpenAIChatCompletionChoiceMessageContentItemModel.imageUrl(base64Url);
 
       _aiMessages.add(
         OpenAIChatCompletionChoiceMessageModel(
@@ -209,11 +218,10 @@ class _AIChatWidgetState extends State<AIChatWidget> {
           maxTokens: widget.config.maxTokens,
           messages: _aiMessages,
           tools: widget.tools,
-          temperature: widget.config.temperature
-      );
+          temperature: widget.config.temperature);
 
       chatStream.listen(
-            (event) {
+        (event) {
           _handleStreamResponse(event);
         },
         onError: (error) {
@@ -261,13 +269,8 @@ class _AIChatWidgetState extends State<AIChatWidget> {
   void _handleSendPressed(types.PartialText message) async {
     final textMessage = types.TextMessage(
       author: _user,
-      createdAt: DateTime
-          .now()
-          .millisecondsSinceEpoch,
-      id: DateTime
-          .now()
-          .millisecondsSinceEpoch
-          .toString(),
+      createdAt: DateTime.now().millisecondsSinceEpoch,
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
       text: message.text,
       status: types.Status.sent,
     );
@@ -311,7 +314,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
     });
 
     chatStream.listen(
-          (event) {
+      (event) {
         _handleStreamResponse(event);
       },
       onError: (error) {
@@ -366,7 +369,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
   void _mergeToolResponse(ToolHandlerResponse toolResponse) {
     setState(() {
       if (toolResponse.messages.isNotEmpty) {
-        if(_messages.length > 0){
+        if (_messages.length > 0) {
           _messages.removeAt(0);
         }
 
@@ -385,18 +388,15 @@ class _AIChatWidgetState extends State<AIChatWidget> {
             .then((toolResponse) {
           // Merge the tool response
           _mergeToolResponse(toolResponse);
-        })
-            .catchError((error) {
+        }).catchError((error) {
           print('Error handling tool call: $error');
         });
-
 
         // Reset the tool call collector for the next round
         _toolCallCollector.reset();
       }
     }
   }
-
 
   void _handleToolCall(OpenAIResponseToolCall toolCall) {
     if (toolCall.id != null) {
@@ -433,9 +433,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
         author: _ai,
         id: id,
         text: content,
-        createdAt: DateTime
-            .now()
-            .millisecondsSinceEpoch,
+        createdAt: DateTime.now().millisecondsSinceEpoch,
       );
       _messages.insert(0, newMessage);
     });

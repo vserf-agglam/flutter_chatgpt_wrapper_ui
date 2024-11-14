@@ -70,11 +70,13 @@ class Attachment {
   final String? name;
   final int? duration;
   final int size;
+  final String content;
 
   const Attachment({
     required this.type,
     required this.url,
     required this.size,
+    required this.content,
     this.name,
     this.duration,
   });
@@ -95,6 +97,7 @@ class Attachment {
       name: json['name'] as String?,
       duration: json['duration'] as int?,
       size: json['size'] as int,
+      content: json['content'] as String,
     );
   }
 }

@@ -99,7 +99,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
               id: '${message.timestamp.millisecondsSinceEpoch}_${attachment.name}',
               name: attachment.name ?? "name",
               size: attachment.size,
-              uri: attachment.content,
+              uri: attachment.url,
             );
             _messages.insert(0, imageMessage);
           } else if (attachment.type == AttachmentType.file) {
